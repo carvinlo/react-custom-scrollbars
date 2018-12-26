@@ -151,7 +151,8 @@ export default class Scrollbars extends Component {
         const { scrollWidth, clientWidth } = this.view;
         const trackWidth = getInnerWidth(this.trackHorizontal);
         const width = Math.ceil(clientWidth / scrollWidth * trackWidth);
-        if (trackWidth === width) return 0;
+        // Fixed: chrome放大情况下scrollbarWidth宽度计算误差
+        if (trackWidth === width || Math.abs(trackWidth - width) <= 2) return 0;
         if (thumbSize) return thumbSize;
         return Math.max(width, thumbMinSize);
     }
@@ -161,7 +162,8 @@ export default class Scrollbars extends Component {
         const { scrollHeight, clientHeight } = this.view;
         const trackHeight = getInnerHeight(this.trackVertical);
         const height = Math.ceil(clientHeight / scrollHeight * trackHeight);
-        if (trackHeight === height) return 0;
+        // Fixed: chrome放大情况下scrollbarWidth宽度计算误差
+        if (trackHeight === height || Math.abs(trackHeight - height) <= 2) return 0;
         if (thumbSize) return thumbSize;
         return Math.max(height, thumbMinSize);
     }
@@ -524,11 +526,21 @@ export default class Scrollbars extends Component {
             ...style
         };
 
+        // Fixed: chrome放大情况下scrollbarWidth宽度计算误差
+        let scrollbarWidthFix = 0;
+        if(window.devicePixelRatio && window.devicePixelRatio >= 1){
+            scrollbarWidthFix = 1;
+        }else if(window.devicePixelRatio && window.devicePixelRatio < 1){
+            scrollbarWidthFix = 2;
+        }
+
         const viewStyle = {
             ...viewStyleDefault,
             // Hide scrollbars by setting a negative margin
-            marginRight: scrollbarWidth ? -scrollbarWidth : 0,
-            marginBottom: scrollbarWidth ? -scrollbarWidth : 0,
+            marginRight: scrollbarWidth ? -(scrollbarWidth + scrollbarWidthFix) : 0,
+            marginBottom: scrollbarWidth ? -(scrollbarWidth + scrollbarWidthFix) : 0,
+            paddingRight: scrollbarWidthFix,
+            paddingBottom: scrollbarWidthFix,
             ...(autoHeight && {
                 ...viewStyleAutoHeight,
                 // Add scrollbarWidth to autoHeight in order to compensate negative margins
